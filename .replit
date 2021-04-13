@@ -1,0 +1,2 @@
+language = "cpp"
+run = "bash main.bash Chapter9 pointer_arithmetic scaling"
