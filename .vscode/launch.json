@@ -1,0 +1,16 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  "version": "0.2.0",
+  "configurations": [
+      {
+          "type": "gdb",
+          "request": "launch",
+          "name": "Debug File",
+          "target": "./Chapter9/exam/card",
+          "cwd": "${workspaceRoot}",
+          "valuesFormatting": "parseText"
+      }
+  ]
+}
+

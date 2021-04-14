@@ -1,0 +1,7 @@
+tasks:
+  - init: 'echo "Todo: replace with thiing"'
+    command: 'echo "BRUH"'
+
+vscode:
+  extensions:
+    - webfreak.debug@0.25.0:17db8ba4039d7baaf497bae0302f0b4d
