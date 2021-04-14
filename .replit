@@ -1,2 +1,2 @@
 language = "cpp"
-run = "bash main.bash Chapter9 exam player"
+run = "bash main.bash Chapter9 exam cstring"
