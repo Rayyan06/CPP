@@ -39,6 +39,7 @@ enum class BlackjackResult
     dealer_win,
     tie
 };
+
 enum CardSuit{
     suit_clubs,
     suit_diamonds,
@@ -63,9 +64,9 @@ struct Player{
 using deck_type = std::array<Card, 52>;
 using index_type = deck_type::size_type;
 
-constexpr int maximumScore{ 21 };
+constexpr int maximumScore{ 52 };
 
-constexpr int minimumDealerScore{ 17 };
+constexpr int minimumDealerScore{ 48 };
 
 void printCard(const Card& card) 
 {
@@ -139,6 +140,7 @@ void printCard(const Card& card)
     std::cout << rankCode << suitCode;
 }   
 
+
 int getCardValue(const Card& card)
 {
     if (card.rank <= CardRank::rank_10)
@@ -187,12 +189,14 @@ deck_type createDeck()
 
 void printDeck(const deck_type& deck)
 {
+    std::cout << "\n\n";
     for (const auto& card: deck)
     {
         printCard(card);
         std::cout << ' ';
     }
-    std::cout << '\n';
+    std::cout << "\n\n";
+    
 
 }
 
@@ -204,7 +208,7 @@ void shuffleDeck(deck_type& deck)
 
 
 // Returns true if the player went bust
-bool playerWantsHit() 
+bool playerWantHit() 
 {
     while(true)
     {
@@ -233,29 +237,31 @@ bool playerTurn(const deck_type& deck, index_type& current_card_index, Player& p
     {
         if (player.score > maximumScore)
         {
-            // This can happen in the beginning of the game.
-            if (player.acesDealt > 0) {
-                player.score-=10; // Convert the Ace from 11 to 1 point
-                player.acesDealt--;
-                std::cout << "ACE TOTEM\n";
 
-                continue;
-            }
     
-            std::cout << "Busted, idiot.\n";
+            std::cout << "Busted, noob.\n";
             return true; // bust
         }
         else
         {
-            if(playerWantsHit())
+            if(playerWantHit())
             {
                 int cardValue{ getCardValue(deck[current_card_index++])};
                 player.score += cardValue;
 
-                if (cardValue == 11)
+                if ((cardValue == 11)|| (cardValue == 2))
                     player.acesDealt++;
 
-                std::cout << "You were dealt a " << cardValue << " and now have " << player.score << " score\n";
+                // This can happen in the beginning of the game.
+                if ((player.acesDealt > 0) && player.score > maximumScore) {
+                    player.score-=10; // Convert the Ace from 11 to 1 point
+                    player.acesDealt--;
+                    std::cout << "ACE TOTEM\n";
+                }
+                std::cout << "You were dealt a " << cardValue << " (";
+                printCard(deck[current_card_index]);
+                
+                std::cout << ") and now have " << player.score << " score\n";
             }
             else {
                 // no bust this turn
@@ -268,32 +274,34 @@ bool playerTurn(const deck_type& deck, index_type& current_card_index, Player& p
 bool dealerTurn(const deck_type& deck, index_type& current_card_index, Player& dealer)
 {
 
-    // If the dealer's score is too high, they went bust
-    if (dealer.score > maximumScore)
-    {
-        if (dealer.acesDealt > 0) 
-        {
-            dealer.score-=10; // Convert the Ace from 11 to 1 point
-            dealer.acesDealt--;
-            std::cout << "ACE TOTEM\n";
-            return false; 
-        }
-        std::cout << "The dealer lost!\n";
-        return true;
-    } 
+
 
     while(dealer.score < minimumDealerScore)
     {
         int cardValue{ getCardValue(deck[current_card_index++])};
-        if (cardValue == 11)
+        if ((cardValue == 11) || (cardValue == 2))
             dealer.acesDealt++;
         dealer.score += cardValue;
         
-        std::cout << "The dealer turned up a " << cardValue << " and now has " << dealer.score << '\n';
-
-
+        if ((dealer.acesDealt > 0)&& (dealer.score > maximumScore)) 
+        {
+            dealer.score-=10; // Convert the Ace from 11 to 1 point
+            dealer.acesDealt--;
+            std::cout << "ACE TOTEM\n";
+        }
+        std::cout << "The dealer turned up a " << cardValue << " (";
+        printCard(deck[current_card_index]);
+  
+        std::cout << ")and now has " << dealer.score << '\n';
     }
 
+    // If the dealer's score is too high, they went bust
+    if (dealer.score > maximumScore)
+    {
+  
+        std::cout << "The dealer lost!\n";
+        return true;
+    } 
 
     // Else, they are still fine.
     return false;
@@ -315,6 +323,8 @@ BlackjackResult playBlackjack(const deck_type& deck)
     Player player{ getCardValue(deck[current_card_index]) + getCardValue(deck[current_card_index + 1])};
 
     current_card_index += 2;
+
+
     // Give player two cards
     std::cout << "You have: " << player.score << '\n';
     if (player.acesDealt)
@@ -351,6 +361,7 @@ int main()
 
    auto deck{ createDeck() };
    shuffleDeck(deck);
+   //printDeck(deck);
 
    BlackjackResult winner{ playBlackjack(deck) };
 

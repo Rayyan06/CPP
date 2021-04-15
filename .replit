@@ -1,2 +1,2 @@
 language = "cpp"
-run = "bash main.bash Chapter9 exam cstring"
+run = "bash main.bash Chapter10 function_pointers calculator"
