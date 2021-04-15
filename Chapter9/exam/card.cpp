@@ -1,9 +1,20 @@
 #include <iostream>
 #include <array>
 
+#include <algorithm>
+#include <random> // for std::shuffle
 
-enum CardRanks{
-    rank_1,
+#include <ctime> // for std::time
+
+#include <limits> // for std::numeric_limits
+ 
+void ignoreLine()
+{
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
+
+
+enum CardRank{
     rank_2,
     rank_3, 
     rank_4,
@@ -22,7 +33,13 @@ enum CardRanks{
     max_rank
 };
 
-enum CardSuits{
+enum class BlackjackResult
+{
+    player_win, 
+    dealer_win,
+    tie
+};
+enum CardSuit{
     suit_clubs,
     suit_diamonds,
     suit_hearts,
@@ -33,11 +50,22 @@ enum CardSuits{
 };
 
 struct Card {
-    CardSuits suit{};
-    CardRanks rank{};
+    CardSuit suit{};
+    CardRank rank{};
 };
 
-using card_array = std::array<Card, 52>;
+
+struct Player{
+    int score{};
+    int acesDealt{};
+};
+
+using deck_type = std::array<Card, 52>;
+using index_type = deck_type::size_type;
+
+constexpr int maximumScore{ 21 };
+
+constexpr int minimumDealerScore{ 17 };
 
 void printCard(const Card& card) 
 {
@@ -46,9 +74,6 @@ void printCard(const Card& card)
 
     switch(card.rank) 
     {
-        case rank_1:
-            rankCode = '1';
-            break;
         case rank_2:
             rankCode = '2';
             break;
@@ -114,29 +139,227 @@ void printCard(const Card& card)
     std::cout << rankCode << suitCode;
 }   
 
-card_array createDeck()
+int getCardValue(const Card& card)
 {
-    card_array cards;
-    int i {0};
-    for (int card_suit{suit_clubs}; card_suit != max_suits; ++card_suit)
+    if (card.rank <= CardRank::rank_10)
     {
-        for (int card_rank{rank_1}; card_rank != max_rank; ++card_rank)
+        // RANK_2 is 0
+        // RANK_3 is 1
+        return (static_cast<int>(card.rank) + 2);
+    }
+    switch(card.rank)
+    {
+     
+        case CardRank::rank_10:
+        case CardRank::rank_jack:
+        case CardRank::rank_queen:
+        case CardRank::rank_king:
+            return 10;
+        case CardRank::rank_ace:
+            return 11;
+        default:
+            return 0;
+    }
+}
+deck_type createDeck()
+{
+    deck_type deck{};
+    auto suits { static_cast<int>(CardSuit::max_suits)};
+
+    auto ranks { static_cast<int>(CardRank::max_rank)};
+
+
+    index_type card{0};
+
+    for (int suit {0}; suit < suits; ++suit)
+    {
+        for (int rank{ 0 }; rank < ranks ; ++rank)
         {
-            cards[i] = Card{ 
-                static_cast<CardSuits>(card_suit), static_cast<CardRanks>(card_rank)
-            };
-            ++i;
-            std::cout << i;
+            deck[card].suit = static_cast<CardSuit>(suit); 
+            deck[card].rank = static_cast<CardRank>(rank);
+            ++card;
         }
     }
 
 
-    return cards;
+    return deck;
 }
 
+void printDeck(const deck_type& deck)
+{
+    for (const auto& card: deck)
+    {
+        printCard(card);
+        std::cout << ' ';
+    }
+    std::cout << '\n';
+
+}
+
+void shuffleDeck(deck_type& deck)
+{
+    static std::mt19937 mt { static_cast<std::mt19937::result_type>(std::time(nullptr))};
+    std::shuffle(deck.begin(), deck.end(), mt);
+}
+
+
+// Returns true if the player went bust
+bool playerWantsHit() 
+{
+    while(true)
+    {
+        std::cout << "(h) to hit, or (s) to stand: ";
+
+        char ch{};
+        std::cin >> ch;
+
+        switch(ch)
+        {
+            case 'h':
+                return true;
+            case 's':
+                return false;
+            default:
+                ignoreLine();
+                std::cin.clear();
+                continue;
+        }
+    }
+}
+
+bool playerTurn(const deck_type& deck, index_type& current_card_index, Player& player)
+{
+    while(true)
+    {
+        if (player.score > maximumScore)
+        {
+            // This can happen in the beginning of the game.
+            if (player.acesDealt > 0) {
+                player.score-=10; // Convert the Ace from 11 to 1 point
+                player.acesDealt--;
+                std::cout << "ACE TOTEM\n";
+
+                continue;
+            }
+    
+            std::cout << "Busted, idiot.\n";
+            return true; // bust
+        }
+        else
+        {
+            if(playerWantsHit())
+            {
+                int cardValue{ getCardValue(deck[current_card_index++])};
+                player.score += cardValue;
+
+                if (cardValue == 11)
+                    player.acesDealt++;
+
+                std::cout << "You were dealt a " << cardValue << " and now have " << player.score << " score\n";
+            }
+            else {
+                // no bust this turn
+                return false;
+            }
+        }
+    }
+}
+
+bool dealerTurn(const deck_type& deck, index_type& current_card_index, Player& dealer)
+{
+
+    // If the dealer's score is too high, they went bust
+    if (dealer.score > maximumScore)
+    {
+        if (dealer.acesDealt > 0) 
+        {
+            dealer.score-=10; // Convert the Ace from 11 to 1 point
+            dealer.acesDealt--;
+            std::cout << "ACE TOTEM\n";
+            return false; 
+        }
+        std::cout << "The dealer lost!\n";
+        return true;
+    } 
+
+    while(dealer.score < minimumDealerScore)
+    {
+        int cardValue{ getCardValue(deck[current_card_index++])};
+        if (cardValue == 11)
+            dealer.acesDealt++;
+        dealer.score += cardValue;
+        
+        std::cout << "The dealer turned up a " << cardValue << " and now has " << dealer.score << '\n';
+
+
+    }
+
+
+    // Else, they are still fine.
+    return false;
+}
+
+BlackjackResult playBlackjack(const deck_type& deck)
+{
+
+
+    index_type current_card_index{ 0 }; // we are on card number 0 when we start
+
+
+    Player dealer{ getCardValue(deck[current_card_index++])};
+    
+
+    std::cout << "The dealer is showing: " << dealer.score << '\n';
+    
+
+    Player player{ getCardValue(deck[current_card_index]) + getCardValue(deck[current_card_index + 1])};
+
+    current_card_index += 2;
+    // Give player two cards
+    std::cout << "You have: " << player.score << '\n';
+    if (player.acesDealt)
+        std::cout << "You have " << player.acesDealt << " ace(s)\n";
+
+
+    // PLAYER GOES FIRST
+
+    if (playerTurn(deck, current_card_index, player))
+            return BlackjackResult::dealer_win;
+
+    if (dealerTurn(deck, current_card_index, dealer))
+            return BlackjackResult::player_win;
+
+    
+    if (player.score==dealer.score) 
+    {
+        return BlackjackResult::tie;
+    } 
+    else if (player.score > dealer.score)
+    {
+        return BlackjackResult::player_win;
+    } 
+    else {
+        return BlackjackResult::dealer_win;
+    }
+     // Player wins if he has more score than dealer
+           
+
+    
+}
 int main()
 {
 
-    auto cards{ createDeck() };
+   auto deck{ createDeck() };
+   shuffleDeck(deck);
+
+   BlackjackResult winner{ playBlackjack(deck) };
+
+   if (winner==BlackjackResult::player_win) {
+       std::cout << "\nNice job, player. You killed it! You are damn good!\n";
+   } else if (winner==BlackjackResult::dealer_win){
+       std::cout << "\nIdiot. You deserved nothing anyway.\n";
+   } else {
+       std::cout << "\nWoah, a tie! Who knew....\n";
+   }
     return 0;
 }
