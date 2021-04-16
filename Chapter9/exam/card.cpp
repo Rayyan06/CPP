@@ -249,7 +249,7 @@ bool playerTurn(const deck_type& deck, index_type& current_card_index, Player& p
                 int cardValue{ getCardValue(deck[current_card_index++])};
                 player.score += cardValue;
 
-                if ((cardValue == 11)|| (cardValue == 2))
+                if ((cardValue == 11))
                     player.acesDealt++;
 
                 // This can happen in the beginning of the game.
@@ -279,7 +279,7 @@ bool dealerTurn(const deck_type& deck, index_type& current_card_index, Player& d
     while(dealer.score < minimumDealerScore)
     {
         int cardValue{ getCardValue(deck[current_card_index++])};
-        if ((cardValue == 11) || (cardValue == 2))
+        if ((cardValue == static_cast<int>(CardRank::ace)))
             dealer.acesDealt++;
         dealer.score += cardValue;
         
