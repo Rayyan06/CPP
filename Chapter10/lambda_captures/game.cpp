@@ -161,6 +161,8 @@ void printSuccess(squares_type::size_type numbersLeft)
         std::cout << numbersLeft << " number(s) left.\n";
     }
 }
+
+
 bool playGame(squares_type& squares)
 {
 
@@ -183,6 +185,9 @@ bool playGame(squares_type& squares)
         
     
 }
+
+
+
 int main()
 {
 
