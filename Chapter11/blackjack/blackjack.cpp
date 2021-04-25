@@ -61,8 +61,8 @@ CardRank m_rank{};
 
 public:
     Card() = default;
-    Card(CardRank suit, CardSuit rank)
-        : m_rank { suit }, m_suit{ rank }
+    Card(CardRank rank, CardSuit suit)
+        : m_rank { rank }, m_suit{ suit }
     {
         
     } 
@@ -134,6 +134,11 @@ public:
                 break;
         }
     }
+			
+	CardSuit suit() const
+	{
+		return m_suit;
+	}
 
     int value() const
     {
@@ -218,11 +223,23 @@ class Player
 {
 private:
 	int m_score{ 0 };
+	int m_numAces{ 0 };
 public:
 	Card drawCard(Deck& deck) 
 	{
 		Card cardDealt{ deck.dealCard() };
 		m_score += cardDealt.value();
+		if (isBust() && (m_numAces > 0))
+		{
+			m_score -= 10;
+			m_numAces--;
+			// Ace was dealt
+			return Card{ CardRank::RANK_ACE, cardDealt.suit()};
+		}
+		
+		if (cardDealt.value() == 11)
+			m_numAces++;
+			
 		return cardDealt;
 	}
 	
@@ -342,11 +359,15 @@ int main()
   {
 	  case BlackjackResult::player_win:
 		  std::cout << "You win!\n";
+		  break;
 	  case BlackjackResult::dealer_win:
 		  std::cout << "You lose!\n";
+		  break;
 	  case BlackjackResult::tie:
 		  std::cout << "You tied with the dealer!\n";
+		  break;
   }
+	
 
 
   return 0;
