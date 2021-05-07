@@ -9,10 +9,16 @@ class Monster : public Creature
 public:
 	enum class Type
 	{
+		xeye,
+		thunker,
+		wither,
+		guardian,
 		dragon,
 		skeleton,
+		creeper,
 		orc,
 		zombie,
+		spider,
 		slime, 
 		
 		max_types

@@ -30,10 +30,14 @@ void Player::drinkPotion(const Potion& potion)
 		case Potion::Type::weakness:
 			--m_damage;
 			break;
+
 			
 		case Potion::Type::enchanting:
 			levelUp();
 			break;
+		case Potion::Type::regeneration:
+			++m_regeneration;
+			
 		case Potion::Type::luck:
 			// A luck potions size also affects it's power
 			if (potion.getSize() == Potion::Size::large)
@@ -57,5 +61,5 @@ void Player::levelUp()
 
 bool Player::hasWon()
 {
-	return m_level >= 20;
+	return m_level >= 40;
 }

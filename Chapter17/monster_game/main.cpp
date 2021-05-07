@@ -5,13 +5,50 @@
 #include "Creature.h"
 #include "Player.h"
 #include "Monster.h"
+#include "Potion.h"
 #include <limits> // for std::numeric_limits
 #include "utility.h"
  
+
+enum class GameDifficulty
+{
+	easy,
+	medium,
+	hard,
+};
+// 10 % chance of getting a potion normally
+constexpr int normalPotionChance{ 10 };
+constexpr int bossHealthThreshold{ 10 }; // Anything greter than 10 is a boss
+
+GameDifficulty difficulty{ GameDifficulty::easy };
+
+int currentTick{ 0 }; // current game tick
+
 void ignoreLine()
 {
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 }
+
+void drinkPotion(Player& player)
+{
+	// Generate a random potion
+    auto potion{ Potion::getRandomPotion() };
+ 
+    std::cout << "You found a mythical potion! Do you want to drink it? [y/n]: ";
+    char choice{};
+    std::cin >> choice;
+	ignoreLine();
+ 
+    if (choice == 'y')
+    {
+      // Apply the effect
+      player.drinkPotion(potion);
+      // Reveal the potion type and size
+      std::cout << "You drank a " << potion.getName() << '\n';
+    }
+}
+
+
 /*
 	Returns the Choice(R or F)
 */
@@ -39,33 +76,22 @@ char getChoice()
 }
 
 
-void onMonsterKilled(Player& p, const Monster& m)
+void onMonsterKilled(Player& player, const Monster& m)
 {
   std::cout << "You killed the " << m.getName() << ".\n";
-  p.levelUp();
-  std::cout << "You are now level " << p.getLevel() << ".\n";
+  player.levelUp();
+  std::cout << "You are now level " << player.getLevel() << ".\n";
   std::cout << "You found " << m.getGold() << " gold.\n";
-  p.addGold(m.getGold());
+  if (m.getHealth() > bossHealthThreshold)
+	player.addRegeneration();
+  player.addGold(m.getGold());
  
+	
   // 30% chance of finding a potion
   constexpr int potionChance{ 30 };
-  if (Random::getRandomNumber(1, 100) <= potionChance + p.getLuck()) // Higher luck means more potions!
+  if (Random::getRandomNumber(1, 100) <= (potionChance + player.getLuck())) // Higher luck means more potions!
   {
-    // Generate a random potion
-    auto potion{ Potion::getRandomPotion() };
- 
-    std::cout << "You found a mythical potion! Do you want to drink it? [y/n]: ";
-    char choice{};
-    std::cin >> choice;
-	ignoreLine();
- 
-    if (choice == 'y')
-    {
-      // Apply the effect
-      player.drinkPotion(potion);
-      // Reveal the potion type and size
-      std::cout << "You drank a " << potion.getName() << '\n';
-    }
+  	drinkPotion(player);
   }
 }
 
@@ -73,30 +99,30 @@ void onMonsterKilled(Player& p, const Monster& m)
 AttackMonster - Handles player attacking monster, including leveling up.
 @param - 
 */
-void attackMonster(Player& p,  Monster& m)
+void attackMonster(Player& player,  Monster& m)
 {
-	if (p.isDead())
+	if (player.isDead())
 		return;
 	
-	std::cout << "You hit the " << m.getName() << " for " << p.getDamage() << " damage.\n";
-	m.reduceHealth(p.getDamage());
+	std::cout << "You hit the " << m.getName() << " for " << player.getDamage() << " damage.\n";
+	m.reduceHealth(player.getDamage());
 
 	
 	if (m.isDead())
 	{
-		onMonsterKilled(p, m); // Short function for victory
+		onMonsterKilled(player, m); // Short function for victory
 	}
 }
 
 /*
-AttackPlayer() - handles monster attacking player.
+Attackplayer() - handles monster attacking player.
 */
-void attackPlayer(Player& p, Monster& m)
+void attackPlayer(Player& player, Monster& m)
 {
 	if (m.isDead())
 		return;
 	
-	p.reduceHealth(m.getDamage());
+	player.reduceHealth(m.getDamage());
 	std::cout << "The " << m.getName() << " hit you for " << m.getDamage() << " damage.\n";
 	
 }
@@ -105,10 +131,10 @@ void attackPlayer(Player& p, Monster& m)
 /*
 fightMonster() - handles fight between player and single monster, including run and fight cases. 
 */
-void fightMonster(Player& p, Monster& m)
+void fightMonster(Player& player, Monster& m)
 {
 	
-	while(!(p.isDead() || m.isDead() || p.hasWon()))
+	while(!(player.isDead() || m.isDead() || player.hasWon()))
 	{
 
 		char choice{ getChoice() };
@@ -116,20 +142,23 @@ void fightMonster(Player& p, Monster& m)
 		if (choice == 'R' || choice == 'r')
 		{
 			// Did the player escape(50% odds)
-			bool escaped{ static_cast<bool>(std::rand() % 2) };
-
-			if (escaped || (p.getLuck() > Random::getRandomNumber(0, 100)) {
+			bool escapedChance{ Random::getRandomNumber(0, 100) < 40 };
+			
+			// Chance of player escaping by their luck.
+			bool escapedLuckChance{ player.getLuck() > Random::getRandomNumber(0, 100) };
+			if (escapedChance || escapedLuckChance) {
 				std::cout << "You successfully fled.\n";
+				player.heal();
 				return; // Bye!
 			}
 
 			std::cout << "You failed to flee.\n";
-			attackPlayer(p, m); // Free attack, player got trapped
+			attackPlayer(player, m); // Free attack, player got trapped
 		} 
 		else if (choice == 'F' || choice == 'f') // If we fight, we attack the monster first.
 		{
-			attackMonster(p, m);
-			attackPlayer(p, m);
+			attackMonster(player, m);
+			attackPlayer(player, m);
 		}
 
 		
@@ -137,8 +166,6 @@ void fightMonster(Player& p, Monster& m)
 
 	
 }
-
-
 
 
 
@@ -158,32 +185,53 @@ int main()
 	ignoreLine();
 	
 	// Create and Greet our player
-	Player p{ playerName };
-	std::cout << "Welcome, " << p.getName() << '\n';
+	Player player{ playerName };
+	std::cout << "Welcome, " << player.getName() << '\n';
 	
 	
-	while (!(p.isDead() && !p.hasWon()))
+	while (!(player.isDead() || player.hasWon()))
 	{
+		Monster monster{ Monster::getRandomMonster()};
+		
+		while (true) {
+			Monster monster = Monster::getRandomMonster();
 
-		Monster m{ Monster::getRandomMonster () };
-		std::cout << "You have encoutered a " << m.getName() << " (" << m.getSymbol() << ").\n";
-		
-		fightMonster(p, m);// Fight that monster.
-		
-		
-		
-	
+			if ((player.getLevel() < 5) && (monster.getHealth() > 10))
+				continue;
+			else if ((player.getLevel() < 20) && (monster.getHealth() > 40))
+				continue;
+			else if ((monster.getHealth() < 10) && (player.getLevel() > 20))
+				continue;
+			else
+				break;
+		}
 			
+			
+		std::cout << "You have encoutered a " << monster.getName() << " (" << monster.getSymbol() << ").\n";
+		
+		fightMonster(player, monster);// Fight that monster.
+
+		
+		if (Random::getRandomNumber(0, 100) <= (normalPotionChance + player.getLuck()/2))
+		{
+			drinkPotion(player);
+		}
+		
+		player.heal(); // Add the regeneration health
+		
+		std::cout << "You have " << player.getHealth() << " health points.\n";
+		
+		++currentTick;
 	}
 	
-	if (p.isDead())
+	if (player.isDead())
 	{
-		std::cout << "You died at level " << p.getLevel() << " and with " << p.getGold() << " gold.\n";
+		std::cout << "You died at level " << player.getLevel() << " and with " << player.getGold() << " gold.\n";
 		std::cout << "Too bad you can't take it with you!\n";
 	}
  	else 
 	{
-		std::cout << "You won! You finished with " << p.getGold() << " gold.\n";
+		std::cout << "You won! You finished with " << player.getGold() << " gold.\n";
 		std::cout << "Have a nice time spending it!\n";
 	}
 

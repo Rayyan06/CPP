@@ -5,11 +5,13 @@
 
 namespace Random
 {
-	int getRandomNumber(int min, int max)
-	{
-		static constexpr double fraction { 1.0 / (RAND_MAX + 1.0) };
-		return min + static_cast<int>((max - min + 1) * (std::rand() * fraction));
-	}
+	int getRandomNumber(int min, int max);
+
 };
 
+namespace Constants
+{
+	inline constexpr int bossTickThreshold{ 5 };
+	inline constexpr int bossThreshold{ 3 };
+};
 #endif

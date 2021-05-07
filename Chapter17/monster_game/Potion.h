@@ -14,6 +14,7 @@ public:
 		poison,
 		weakness,
 		enchanting,
+		regeneration,
 		luck, // Higher chance of fleeing and getting more potions.
 		max_type
 	};
@@ -35,7 +36,7 @@ public:
 	const Type getType() const { return m_type; }
 	const Size getSize() const { return m_size; }
 	
-	const std::string& getName() const;
+	std::string getName() const;
 	static Potion getRandomPotion();
 	
 	static std::string_view getTypeString(Potion::Type type);

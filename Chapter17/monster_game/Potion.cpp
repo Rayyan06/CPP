@@ -24,29 +24,23 @@ std::string Potion::getName() const
 	return result.str();
 }
 
-Potion getRandomPotion()
+Potion Potion::getRandomPotion()
 {
-	using Potion::Type;
-	using Potion::Size;
-	
+
 	Potion::Type randomType { 
-		static_cast<Type>(
+		static_cast<Potion::Type>(
 			Random::getRandomNumber(
 				0, 
-				static_cast<int>(
-					Type::max_types - 1
-				)
+				static_cast<int>(Potion::Type::max_type) - 1
 			)
 		)
 	};
 	
 	Potion::Size randomSize {
-		static_cast<Size>(
+		static_cast<Potion::Size>(
 			Random::getRandomNumber(
 				0, 
-				static_cast<int>(
-					Size::max_sizes - 1
-				)
+				static_cast<int>(Potion::Size::max_size) - 1
 			)
 		)	
 	};
@@ -60,7 +54,7 @@ Potion getRandomPotion()
 
 
 // No need for static here, C++ is weird.
-std::string_view getTypeString(Potion::Type type)
+std::string_view Potion::getTypeString(Potion::Type type)
 {
 	
 	static constexpr std::array names{
@@ -69,14 +63,15 @@ std::string_view getTypeString(Potion::Type type)
 		"Poison",
 		"Weakness",
 		"Enchanting",
+		"Regeneration",
 		"Luck"
 	};
 	return names.at(static_cast<std::size_t>(type));
 }
 
-std::string_view getSizeString(Potion::Size size)
+std::string_view Potion::getSizeString(Potion::Size size)
 {
-	static constexpr sizes {
+	static constexpr std::array sizes {
 		"Small",
 		"Medium", 
 		"Large",
