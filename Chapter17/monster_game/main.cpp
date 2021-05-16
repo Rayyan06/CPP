@@ -142,7 +142,7 @@ void fightMonster(Player& player, Monster& m)
 		if (choice == 'R' || choice == 'r')
 		{
 			// Did the player escape(50% odds)
-			bool escapedChance{ Random::getRandomNumber(0, 100) < 40 };
+			bool escapedChance{ Random::getRandomNumber(0, 100) < 50 };
 			
 			// Chance of player escaping by their luck.
 			bool escapedLuckChance{ player.getLuck() > Random::getRandomNumber(0, 100) };
@@ -168,6 +168,42 @@ void fightMonster(Player& player, Monster& m)
 }
 
 
+/*
+generateMonster() - Generates Random Monster based on the player's level. 
+We don't want xeyes, thunkers, or guardian's at level 1.
+@param - Player, so we can access his level. It is const because we are not messing 
+around with the player's attributes
+@return - The random monster.
+*/
+Monster generateMonster(const Player& player) 
+{
+	while(true)
+	{
+		Monster monster = Monster::getRandomMonster();
+			
+		if ((player.getLevel() < 5) && (monster.getHealth() > 10))
+		{
+
+
+			continue;
+		}
+		else if ((player.getLevel() < 20) && (monster.getHealth() > 40))
+		{
+
+			continue;
+		}
+		else if ((monster.getHealth() < 10) && (player.getLevel() > 20))
+		{
+
+			continue;
+		}
+		else
+		{
+			std::cout << "Monster Health: " << monster.getHealth() << '\n';
+			return monster;
+		}
+	}
+}
 
 
 
@@ -191,21 +227,7 @@ int main()
 	
 	while (!(player.isDead() || player.hasWon()))
 	{
-		Monster monster{ Monster::getRandomMonster()};
-		
-		while (true) {
-			Monster monster = Monster::getRandomMonster();
-
-			if ((player.getLevel() < 5) && (monster.getHealth() > 10))
-				continue;
-			else if ((player.getLevel() < 20) && (monster.getHealth() > 40))
-				continue;
-			else if ((monster.getHealth() < 10) && (player.getLevel() > 20))
-				continue;
-			else
-				break;
-		}
-			
+		Monster monster{ generateMonster(player) };
 			
 		std::cout << "You have encoutered a " << monster.getName() << " (" << monster.getSymbol() << ").\n";
 		

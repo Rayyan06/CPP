@@ -61,5 +61,5 @@ void Player::levelUp()
 
 bool Player::hasWon()
 {
-	return m_level >= 40;
+	return m_level >= 50;
 }
